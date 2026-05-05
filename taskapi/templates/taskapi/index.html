@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TaskFlow</title>
+<style>
+:root{
+  --bg:#0d0d14;--surface:#13131e;--card:#1a1a28;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --accent:#7c6fff;--accent2:#b09fff;--glow:rgba(124,111,255,0.25);
+  --text:#eeeeff;--muted:#8888aa;--sub:#555577;
+  --green:#22d3a0;--amber:#fbbf24;--red:#f87171;--blue:#60a5fa;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif}
+
+/* BG */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 10% 10%, rgba(124,111,255,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 90% 90%, rgba(96,165,250,0.08) 0%, transparent 60%),
+    repeating-linear-gradient(0deg,rgba(255,255,255,0.015) 0px,transparent 1px,transparent 59px,rgba(255,255,255,0.015) 60px),
+    repeating-linear-gradient(90deg,rgba(255,255,255,0.015) 0px,transparent 1px,transparent 59px,rgba(255,255,255,0.015) 60px);
+  pointer-events:none;
+}
+
+/* TOPBAR */
+.topbar{
+  position:relative;z-index:10;height:54px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 1.5rem;
+  background:rgba(13,13,20,0.85);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(16px);
+}
+.logo{font-weight:800;font-size:18px;letter-spacing:-0.5px}
+.logo em{color:var(--accent);font-style:normal}
+.topbar-r{display:none;align-items:center;gap:10px}
+.role-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.rb-admin{background:rgba(124,111,255,.2);color:var(--accent2);border:1px solid rgba(124,111,255,.3)}
+.rb-manager{background:rgba(34,211,160,.15);color:#34d399;border:1px solid rgba(34,211,160,.25)}
+.rb-developer{background:rgba(251,191,36,.12);color:var(--amber);border:1px solid rgba(251,191,36,.2)}
+#topbar-user{font-size:13px;color:var(--muted)}
+.btn-out{background:transparent;border:1px solid var(--border2);color:var(--muted);padding:5px 13px;border-radius:7px;cursor:pointer;font-size:12px;transition:.2s}
+.btn-out:hover{border-color:var(--red);color:var(--red)}
+
+/* LAYOUT */
+.page{position:relative;z-index:5;min-height:calc(100vh - 54px);display:flex}
+
+/* LOGIN */
+#login-page{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem}
+.login-wrap{display:flex;gap:2.5rem;align-items:center;max-width:820px;width:100%}
+.login-left{flex:1;padding-right:1rem}
+.login-left h2{font-size:36px;font-weight:800;line-height:1.15;margin-bottom:.75rem;letter-spacing:-1px}
+.login-left h2 span{color:var(--accent2)}
+.login-left p{color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:1.5rem}
+.feat{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.feat-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.feat span{font-size:13px;color:var(--muted)}
+
+.login-card{
+  width:350px;flex-shrink:0;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:18px;padding:1.75rem;
+  box-shadow:0 0 50px var(--glow);
+  position:relative;overflow:hidden;
+}
+.login-card::after{
+  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+}
+.login-card h3{font-size:19px;font-weight:700;margin-bottom:3px}
+.login-card .sub{font-size:13px;color:var(--muted);margin-bottom:1.25rem}
+
+/* CRED BOX */
+.cred-box{
+  background:rgba(124,111,255,0.07);
+  border:1px solid rgba(124,111,255,0.22);
+  border-radius:10px;padding:11px 14px;margin-bottom:1.1rem;
+}
+.cred-title{font-size:10px;font-weight:700;color:var(--accent2);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
+.cred-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.cred-row:last-of-type{margin-bottom:0}
+.cred-key{font-size:11px;color:var(--muted);width:65px;flex-shrink:0}
+.cred-val{font-family:'Courier New',monospace;font-size:13px;color:var(--text);font-weight:600;flex:1}
+.cred-sep{height:1px;background:rgba(124,111,255,0.15);margin:6px 0}
+.btn-fill{
+  display:block;width:100%;margin-top:10px;
+  background:rgba(124,111,255,0.15);border:1px solid rgba(124,111,255,0.3);
+  color:var(--accent2);padding:6px 0;border-radius:7px;
+  font-size:12px;font-weight:600;cursor:pointer;transition:.2s;
+  letter-spacing:.3px;
+}
+.btn-fill:hover{background:rgba(124,111,255,0.28)}
+
+/* FORM */
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:11px;font-weight:600;color:var(--sub);letter-spacing:.6px;text-transform:uppercase;margin-bottom:5px}
+.fg input{
+  width:100%;padding:10px 13px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);border-radius:9px;
+  color:var(--text);font-size:14px;outline:none;transition:.2s;
+}
+.fg input:focus{border-color:var(--accent);background:rgba(124,111,255,0.07);box-shadow:0 0 0 3px rgba(124,111,255,0.12)}
+.fg input::placeholder{color:var(--sub)}
+.err-msg{display:none;color:var(--red);font-size:12px;margin-top:7px;padding:8px 11px;background:rgba(248,113,113,0.08);border-radius:7px;border:1px solid rgba(248,113,113,0.18)}
+.btn-login{
+  width:100%;margin-top:5px;padding:11px;
+  background:linear-gradient(135deg,var(--accent),#9d8fff);
+  color:#fff;border:none;border-radius:9px;
+  font-size:15px;font-weight:700;cursor:pointer;
+  letter-spacing:.3px;transition:.25s;
+}
+.btn-login:hover{opacity:.88;transform:translateY(-1px)}
+.btn-login:active{transform:scale(.98)}
+
+/* APP */
+#app-page{flex:1;flex-direction:column;display:none}
+.nav{
+  display:flex;gap:4px;padding:.65rem 1.5rem;
+  background:rgba(13,13,20,0.7);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(12px);position:sticky;top:0;z-index:9;
+}
+.tab{padding:7px 18px;border-radius:8px;border:none;background:transparent;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;transition:.2s}
+.tab:hover{color:var(--text)}
+.tab.on{background:rgba(124,111,255,0.14);color:var(--accent2)}
+.content{max-width:1080px;margin:0 auto;width:100%;padding:1.75rem 1.5rem}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.25rem;border-left:3px solid}
+.sc.p{border-left-color:var(--accent)}.sc.b{border-left-color:var(--blue)}.sc.a{border-left-color:var(--amber)}.sc.g{border-left-color:var(--green)}
+.sc-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.sc-num{font-size:30px;font-weight:800;margin-top:5px}
+.sc.p .sc-num{color:var(--accent2)}.sc.b .sc-num{color:var(--blue)}.sc.a .sc-num{color:var(--amber)}.sc.g .sc-num{color:var(--green)}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:10px}
+.filters{display:flex;gap:8px}
+.filters select{
+  background:var(--card);border:1px solid var(--border);color:var(--text);
+  padding:7px 10px;border-radius:8px;font-size:13px;cursor:pointer;outline:none;transition:.2s;
+}
+.filters select:focus{border-color:var(--accent)}
+.btn-new{
+  background:linear-gradient(135deg,var(--accent),#9d8fff);
+  color:#fff;border:none;padding:8px 16px;border-radius:8px;
+  font-size:13px;font-weight:700;cursor:pointer;transition:.2s;white-space:nowrap;
+}
+.btn-new:hover{opacity:.85}
+
+/* TASK ITEMS */
+.tasks{display:flex;flex-direction:column;gap:7px}
+.ti{
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:.9rem 1.1rem;display:flex;align-items:center;gap:12px;
+  transition:.2s;
+}
+.ti:hover{border-color:var(--border2);transform:translateX(3px)}
+.tdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.tdot.todo{background:var(--sub)}
+.tdot.in_progress{background:var(--amber);box-shadow:0 0 8px rgba(251,191,36,.4)}
+.tdot.done{background:var(--green);box-shadow:0 0 8px rgba(34,211,160,.35)}
+.tt{font-size:14px;font-weight:600;flex:1}
+.tm{font-size:12px;color:var(--muted);margin-top:2px}
+.chip{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.c-todo{background:rgba(85,85,119,.2);color:#9090bb}
+.c-in_progress{background:rgba(251,191,36,.1);color:var(--amber)}
+.c-done{background:rgba(34,211,160,.1);color:var(--green)}
+.c-high{background:rgba(248,113,113,.1);color:var(--red)}
+.c-medium{background:rgba(251,191,36,.1);color:var(--amber)}
+.c-low{background:rgba(34,211,160,.1);color:var(--green)}
+.acts{display:flex;gap:5px}
+.be{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;transition:.2s}
+.be:hover{border-color:var(--accent);color:var(--accent2)}
+.bd{background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.15);color:var(--red);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;transition:.2s}
+.bd:hover{background:rgba(248,113,113,.18)}
+.empty{text-align:center;padding:3rem;color:var(--muted);font-size:14px}
+
+/* USERS */
+.ui{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.9rem 1.1rem;display:flex;align-items:center;gap:12px;margin-bottom:7px}
+.av{width:40px;height:40px;border-radius:50%;background:rgba(124,111,255,.18);border:1px solid rgba(124,111,255,.3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--accent2);flex-shrink:0}
+.un{font-size:14px;font-weight:600}
+.ue{font-size:12px;color:var(--muted);margin-top:2px}
+
+/* PROFILE */
+.prof{max-width:420px}
+.pc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.75rem;position:relative;overflow:hidden}
+.pc::before{content:'';position:absolute;top:0;left:0;right:0;height:70px;background:linear-gradient(135deg,rgba(124,111,255,.12),transparent)}
+.pav{width:60px;height:60px;border-radius:50%;background:rgba(124,111,255,.22);border:2px solid rgba(124,111,255,.35);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:var(--accent2);position:relative;margin-bottom:1rem}
+.pn{font-size:20px;font-weight:800;margin-bottom:.4rem}
+.pt{width:100%;border-collapse:collapse;margin-top:1rem}
+.pt td{padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.pt tr:last-child td{border:none}
+.pt td:first-child{color:var(--muted)}
+.pt td:last-child{text-align:right;font-weight:600}
+
+/* MODAL */
+.mover{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;z-index:100}
+.mbox{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:1.75rem;width:440px;max-width:95vw;box-shadow:0 0 60px var(--glow);position:relative}
+.mbox::after{content:'';position:absolute;top:0;left:15%;right:15%;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
+.mbox h3{font-size:17px;font-weight:700;margin-bottom:1.1rem}
+.mg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mbox select{width:100%;padding:9px 11px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none}
+.mfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:1.1rem}
+.bc{background:transparent;border:1px solid var(--border2);color:var(--muted);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;transition:.2s}
+.bc:hover{border-color:var(--red);color:var(--red)}
+.bs{background:linear-gradient(135deg,var(--accent),#9d8fff);color:#fff;border:none;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:.2s}
+.bs:hover{opacity:.85}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;z-index:999;background:var(--card);border:1px solid var(--border2);color:var(--text);padding:11px 18px;border-radius:11px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;box-shadow:0 8px 30px rgba(0,0,0,.4);transform:translateY(70px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+#toast.show{transform:translateY(0);opacity:1}
+.td{width:7px;height:7px;border-radius:50%}
+.td-ok{background:var(--green)}.td-err{background:var(--red)}
+
+@media(max-width:640px){
+  .login-left{display:none}
+  .login-card{width:100%}
+  .stats{grid-template-columns:1fr 1fr}
+  .ti{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Task<em>Flow</em></div>
+  <div class="topbar-r" id="tr">
+    <span id="tu"></span>
+    <span id="trole" class="role-badge"></span>
+    <button class="btn-out" onclick="logout()">Sign out</button>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- LOGIN -->
+<div id="login-page">
+  <div class="login-wrap">
+    <div class="login-left">
+      <h2>Manage Tasks<br/><span>Smarter & Faster</span></h2>
+      <p>Full-stack task management with role-based access control, JWT auth, and priority filtering.</p>
+      <div class="feat"><div class="feat-dot"></div><span>Admin, Manager, Developer roles</span></div>
+      <div class="feat"><div class="feat-dot"></div><span>JWT secure login system</span></div>
+      <div class="feat"><div class="feat-dot"></div><span>Filter by status and priority</span></div>
+      <div class="feat"><div class="feat-dot"></div><span>Built with Django REST Framework</span></div>
+    </div>
+
+    <div class="login-card">
+      <h3>Welcome back</h3>
+      <p class="sub">Sign in to your account</p>
+
+      <div class="cred-box">
+        <div class="cred-title">&#128273; Quick Login Credentials</div>
+        <div class="cred-row">
+          <span class="cred-key">Username</span>
+          <span class="cred-val" id="ch-u">admin</span>
+        </div>
+        <div class="cred-sep"></div>
+        <div class="cred-row">
+          <span class="cred-key">Password</span>
+          <span class="cred-val" id="ch-p">admin123</span>
+        </div>
+        <button class="btn-fill" onclick="fillCreds()">&#9654;&nbsp; Auto-fill &amp; Sign in</button>
+      </div>
+
+      <div class="fg"><label>Username</label><input id="iu" placeholder="admin" autocomplete="username"/></div>
+      <div class="fg"><label>Password</label><input id="ip" type="password" placeholder="admin123" autocomplete="current-password"/></div>
+      <div id="lerr" class="err-msg"></div>
+      <button class="btn-login" onclick="doLogin()">Sign In &rarr;</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-page">
+  <div class="nav">
+    <button class="tab on" onclick="go('tasks',this)">Tasks</button>
+    <button class="tab" onclick="go('users',this)">Users</button>
+    <button class="tab" onclick="go('profile',this)">Profile</button>
+  </div>
+  <div class="content">
+
+    <div id="t-tasks">
+      <div class="stats">
+        <div class="sc p"><div class="sc-label">Total</div><div class="sc-num" id="sn-t">0</div></div>
+        <div class="sc b"><div class="sc-label">To Do</div><div class="sc-num" id="sn-d">0</div></div>
+        <div class="sc a"><div class="sc-label">In Progress</div><div class="sc-num" id="sn-p">0</div></div>
+        <div class="sc g"><div class="sc-label">Done</div><div class="sc-num" id="sn-o">0</div></div>
+      </div>
+      <div class="toolbar">
+        <div class="filters">
+          <select id="fs" onchange="filt()">
+            <option value="">All Status</option>
+            <option value="todo">To Do</option>
+            <option value="in_progress">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+          <select id="fp" onchange="filt()">
+            <option value="">All Priority</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <button class="btn-new" onclick="openM()">+ New Task</button>
+      </div>
+      <div class="tasks" id="tlist"></div>
+    </div>
+
+    <div id="t-users" style="display:none">
+      <div id="ulist"></div>
+    </div>
+
+    <div id="t-profile" style="display:none">
+      <div class="prof"><div class="pc" id="pcard"></div></div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<!-- MODAL -->
+<div id="modal" class="mover">
+  <div class="mbox">
+    <h3 id="mh">New Task</h3>
+    <div class="fg"><label>Title *</label><input id="mt" placeholder="Task title"/></div>
+    <div class="fg"><label>Description</label><input id="md" placeholder="Optional"/></div>
+    <div class="mg2">
+      <div class="fg"><label>Status</label>
+        <select id="ms"><option value="todo">To Do</option><option value="in_progress">In Progress</option><option value="done">Done</option></select>
+      </div>
+      <div class="fg"><label>Priority</label>
+        <select id="mp"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select>
+      </div>
+    </div>
+    <div class="fg"><label>Due Date</label><input id="mdd" type="date"/></div>
+    <div id="merr" class="err-msg"></div>
+    <div class="mfoot">
+      <button class="bc" onclick="closeM()">Cancel</button>
+      <button class="bs" onclick="saveTask()">Save Task</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"><span class="td" id="tdot"></span><span id="tmsg"></span></div>
+
+<script>
+const API='http://127.0.0.1:8000/api';
+let token='',tasks=[],eid=null;
+const $=id=>document.getElementById(id);
+const esc=s=>{const d=document.createElement('div');d.textContent=s||'';return d.innerHTML};
+const cap=s=>s?s[0].toUpperCase()+s.slice(1):'';
+const fmt=s=>s==='in_progress'?'In Progress':s==='todo'?'To Do':'Done';
+
+function toast(msg,ok=true){
+  $('tmsg').textContent=msg;
+  $('tdot').className='td '+(ok?'td-ok':'td-err');
+  const t=$('toast');t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+async function req(method,path,body){
+  const o={method,headers:{'Content-Type':'application/json'}};
+  if(token)o.headers['Authorization']='Bearer '+token;
+  if(body)o.body=JSON.stringify(body);
+  try{
+    const r=await fetch(API+path,o);
+    const d=await r.json().catch(()=>({}));
+    return{ok:r.ok,data:d};
+  }catch(e){
+    return{ok:false,data:{},err:e.message};
+  }
+}
+
+function fillCreds(){
+  $('iu').value=$('ch-u').textContent;
+  $('ip').value=$('ch-p').textContent;
+  doLogin();
+}
+
+$('ip').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+
+async function doLogin(){
+  const u=$('iu').value.trim(),p=$('ip').value;
+  const el=$('lerr');el.style.display='none';
+  if(!u||!p){el.textContent='Enter username and password.';el.style.display='block';return;}
+  const r=await req('POST','/token/',{username:u,password:p});
+  if(!r.ok){
+    el.textContent='Wrong credentials! Run: python manage.py changepassword admin — then set password to admin123';
+    el.style.display='block';return;
+  }
+  token=r.data.access;
+  $('login-page').style.display='none';
+  const ap=$('app-page');ap.style.display='flex';ap.style.flexDirection='column';
+  $('tr').style.display='flex';
+  await loadProfile(true);
+  await loadTasks();
+}
+
+function logout(){
+  token='';tasks=[];
+  $('app-page').style.display='none';
+  $('tr').style.display='none';
+  $('login-page').style.display='flex';
+}
+
+async function loadProfile(tb=false){
+  const r=await req('GET','/profile/');if(!r.ok)return;
+  const u=r.data;
+  if(tb){
+    $('tu').textContent=u.username;
+    const rb=$('trole');rb.textContent=u.role;
+    rb.className='role-badge rb-'+u.role;
+  }
+  $('pcard').innerHTML=`
+    <div style="position:relative;z-index:1">
+      <div class="pav">${(u.username||'?').slice(0,2).toUpperCase()}</div>
+      <div class="pn">${esc(u.username)}</div>
+      <span class="role-badge rb-${u.role}">${cap(u.role)}</span>
+      <table class="pt">
+        <tr><td>User ID</td><td>#${u.id}</td></tr>
+        <tr><td>Email</td><td>${esc(u.email||'Not set')}</td></tr>
+        <tr><td>Role</td><td>${cap(u.role)}</td></tr>
+      </table>
+    </div>`;
+}
+
+async function loadTasks(){
+  $('tlist').innerHTML='<div class="empty">Loading...</div>';
+  const r=await req('GET','/tasks/');
+  tasks=r.ok?(r.data.results||r.data||[]):[];
+  render(tasks);stats(tasks);
+}
+
+function stats(t){
+  $('sn-t').textContent=t.length;
+  $('sn-d').textContent=t.filter(x=>x.status==='todo').length;
+  $('sn-p').textContent=t.filter(x=>x.status==='in_progress').length;
+  $('sn-o').textContent=t.filter(x=>x.status==='done').length;
+}
+
+function filt(){
+  const s=$('fs').value,p=$('fp').value;
+  let l=tasks;
+  if(s)l=l.filter(t=>t.status===s);
+  if(p)l=l.filter(t=>t.priority===p);
+  render(l);stats(l);
+}
+
+function render(list){
+  const el=$('tlist');
+  if(!list.length){el.innerHTML='<div class="empty">No tasks. Click "+ New Task" to create one!</div>';return;}
+  el.innerHTML=list.map(t=>`
+    <div class="ti">
+      <div class="tdot ${t.status}"></div>
+      <div style="flex:1">
+        <div class="tt">${esc(t.title)}</div>
+        <div class="tm">By <b style="color:var(--text)">${esc(t.created_by)}</b>${t.assigned_to_username?' · Assigned: <b style="color:var(--text)">'+esc(t.assigned_to_username)+'</b>':''}${t.due_date?' · Due: '+t.due_date:''}</div>
+      </div>
+      <span class="chip c-${t.status}">${fmt(t.status)}</span>
+      <span class="chip c-${t.priority}">${cap(t.priority)}</span>
+      <div class="acts">
+        <button class="be" onclick="openE(${t.id})">Edit</button>
+        <button class="bd" onclick="delT(${t.id})">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function openM(){
+  eid=null;$('mh').textContent='New Task';
+  $('mt').value='';$('md').value='';$('ms').value='todo';$('mp').value='medium';$('mdd').value='';
+  $('merr').style.display='none';
+  $('modal').style.display='flex';
+}
+function openE(id){
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  eid=id;$('mh').textContent='Edit Task';
+  $('mt').value=t.title;$('md').value=t.description||'';
+  $('ms').value=t.status;$('mp').value=t.priority;$('mdd').value=t.due_date||'';
+  $('merr').style.display='none';
+  $('modal').style.display='flex';
+}
+function closeM(){$('modal').style.display='none'}
+
+async function saveTask(){
+  const title=$('mt').value.trim();
+  if(!title){$('merr').textContent='Title is required.';$('merr').style.display='block';return;}
+  const body={title,description:$('md').value,status:$('ms').value,priority:$('mp').value,due_date:$('mdd').value||null};
+  const r=eid?await req('PATCH','/tasks/'+eid+'/',body):await req('POST','/tasks/',body);
+  if(!r.ok){$('merr').textContent='Save failed. Check permissions.';$('merr').style.display='block';return;}
+  closeM();toast(eid?'Task updated!':'Task created!');await loadTasks();
+}
+
+async function delT(id){
+  if(!confirm('Delete this task?'))return;
+  await req('DELETE','/tasks/'+id+'/');
+  toast('Task deleted');await loadTasks();
+}
+
+async function loadUsers(){
+  const r=await req('GET','/users/');
+  const el=$('ulist');
+  if(!r.ok){el.innerHTML='<div class="empty">Only Admins and Managers can view all users.</div>';return;}
+  const u=r.data.results||r.data||[];
+  el.innerHTML=u.map(x=>`
+    <div class="ui">
+      <div class="av">${(x.username||'?').slice(0,2).toUpperCase()}</div>
+      <div style="flex:1"><div class="un">${esc(x.username)}</div><div class="ue">${esc(x.email||'No email')}</div></div>
+      <span class="role-badge rb-${x.role}">${cap(x.role)}</span>
+    </div>`).join('');
+}
+
+function go(tab,btn){
+  ['tasks','users','profile'].forEach(t=>$('t-'+t).style.display='none');
+  $('t-'+tab).style.display='block';
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  if(tab==='users')loadUsers();
+  if(tab==='profile')loadProfile();
+}
+</script>
+</body>
+</html>
